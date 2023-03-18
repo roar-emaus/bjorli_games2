@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bjorli Games</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <script>
+        async function postData(url = '', data = {}) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            return response.json();
+        }
+
+        async function getData(url = '') {
+            const response = await fetch(url);
+            return response.json();
+        }
+
+        function getTableData() {
+            const table = document.getElementById('scoresTable');
+            const data = {};
+            const totalColumnIndex = table.rows[0].cells.length - 1;
+
+            for (let i = 1; i < table.rows.length; i++) {
+                const row = table.rows[i];
+                const contestant = row.cells[0].innerText;
+                const scores = {};
+                for (let j = 1; j < totalColumnIndex; j++) {
+                    const game = table.rows[0].cells[j].innerText;
+                    scores[game] = parseInt(row.cells[j].innerText);
+                }
+                data[contestant] = scores;
+            }
+            return data;
+        }
+        async function submitScores() {
+            const folder = document.getElementById('folderList').value;
+            const data = getTableData();
+            const result = await postData(`http://127.0.0.1:8000/write`, {data, folder});
+            console.log(result);
+        }
+        async function fetchScores() {
+            const folder = document.getElementById('folderList').value;
+            const data = await getData(`http://127.0.0.1:8000/read/${folder}`);
+            console.log(data);
+            if (data.message) {
+                console.log(data.message);
+            } else {
+                updateTable(data, folder);
+            }
+            updateTotal();
+        }
+
+        async function updateTable(data, folder) {
+            const table = document.getElementById('scoresTable');
+            table.innerHTML = '';
+            const header = await createTableHeader(data[0], folder);
+            const tbody = document.createElement('tbody');
+            tbody.appendChild(header);
+            for (const row of data) {
+              tbody.appendChild(await createTableRow(row, folder));
+            }
+            if (table.tBodies.length > 0) {
+              table.replaceChild(tbody, table.tBodies[0]);
+            } else {
+              table.appendChild(tbody);
+            }
+            updateTotal();
+        }
+
+        async function createTableHeader(rowData, folder) {
+            const tr = document.createElement('tr');
+            for (const header in rowData) {
+                const th = document.createElement('th');
+                if (await isFolderLocked(folder)) {
+                    th.setAttribute('contentEditable', 'false');
+                } else {
+                    th.setAttribute('contentEditable', 'true');
+                }
+                th.innerText = header;
+                tr.appendChild(th);
+            }
+            const totalHeader = document.createElement('th');
+            totalHeader.innerText = 'Total';
+            tr.appendChild(totalHeader);
+            return tr;
+        }
+        
+        async function createTableRow(rowData, folder) {
+            const tr = document.createElement('tr');
+            for (const cellData in rowData) {
+                const td = document.createElement('td');
+                if (await isFolderLocked(folder)) {
+                    td.setAttribute('contentEditable', 'false');
+                } else {
+                    td.setAttribute('contentEditable', 'true');
+                    td.addEventListener('input', updateTotal);
+                }
+                td.innerText = rowData[cellData];
+                tr.appendChild(td);
+            }
+            const totalCell = document.createElement('td');
+            totalCell.innerText = 0;
+            tr.appendChild(totalCell);
+            return tr;
+        }
+
+        function addRow() {
+            const newRow = Array.from(document.getElementById('scoresTable').rows[0].cells).map((header, i) => i === 0 ? 'New Contestant' : 0);
+            const table = document.getElementById('scoresTable');
+            table.appendChild(createTableRow(newRow));
+            updateTotal(); // Update the "Total" column
+        }
+        function addColumn() {
+            const table = document.getElementById('scoresTable');
+            const newHeader = `Game ${table.rows[0].cells.length - 2}`; // Subtract 2 instead of 1 to account for the "Total" column
+        
+            // Add a new header cell before the "Total" header cell
+            const newHeaderCell = document.createElement('th');
+            newHeaderCell.innerText = newHeader;
+            table.rows[0].insertBefore(newHeaderCell, table.rows[0].lastElementChild);
+        
+            // Add new cells with default values to each row before the "Total" column
+            for (let i = 1; i < table.rows.length; i++) {
+                const newRowCell = document.createElement('td');
+                newRowCell.contentEditable = 'true';
+                newRowCell.innerText = 0;
+                table.rows[i].insertBefore(newRowCell, table.rows[i].lastElementChild);
+            }
+            updateTotal(); // Update the "Total" column
+        }
+        function updateTotal() {
+            const table = document.getElementById('scoresTable');
+            if (!table.rows[0]) {
+                return;
+            }
+            const totalColumnIndex = table.rows[0].cells.length - 1;
+        
+            for (let i = 1; i < table.rows.length; i++) {
+                let product = 1;
+                for (let j = 1; j < totalColumnIndex; j++) {
+                    const value = parseInt(table.rows[i].cells[j].innerText);
+                    if (value !== 0) {
+                        product *= value;
+                    }
+                }
+                table.rows[i].cells[totalColumnIndex].innerText = product;
+            }
+        }
+        async function fetchLatestScores() {
+            const selectElement = document.getElementById('folderList');
+            selectElement.innerHTML = ''; // Clear the dropdown menu
+        
+            // Fetch the list of folders and populate the dropdown menu with the results
+            const data = await getData(`http://127.0.0.1:8000/folders`);
+            for (const folder of data.folders) {
+                const optionElement = document.createElement('option');
+                optionElement.innerText = folder;
+                selectElement.appendChild(optionElement);
+            }
+        
+            // Select the first folder by default
+            if (selectElement.options.length > 0) {
+                selectElement.selectedIndex = 0;
+            }
+        
+            // Fetch the scores for the selected folder
+            await fetchScores();
+        }
+        async function isFolderLocked(folder) {
+            const response = await fetch(`http://127.0.0.1:8000/lock/${folder}`);
+            const data = await response.json();
+            return data.locked;
+        }
+        window.addEventListener('load', fetchLatestScores);
+
+    </script>
+</head>
+<body>
+    <h1>API Test</h1>
+    <table id="scoresTable"> 
+        <!-- The table will be generated dynamically using JavaScript -->
+    </table>
+    <br>
+    <label for="folder">Game Date:</label>
+    <select id="folderList" name="folder">
+    </select>
+    <script>
+        // Add an event listener to the select element for the "change" event
+        document.getElementById('folderList').addEventListener('change', fetchScores);
+    </script>
+    <br>
+    <button onclick="submitScores()">Submit Scores</button>
+    <button onclick="addRow()">Add Row</button>
+    <button onclick="addColumn()">Add Column</button>
+
+</body>
+</html>
+
