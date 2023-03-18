@@ -49,7 +49,6 @@ def get_games():
 
 def check_lock(folder_path):
     path = Path(f"data/{folder_path}/.lock")
-    print(path)
     return path.exists()
 
 

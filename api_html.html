@@ -127,13 +127,22 @@
             return tr;
         }
 
-        function addRow() {
+        async function addRow() {
+            const folder = document.getElementById('folderList').value;
+            if (await isFolderLocked(folder)) {
+                return;
+            }
             const newRow = Array.from(document.getElementById('scoresTable').rows[0].cells).map((header, i) => i === 0 ? 'New Contestant' : 0);
             const table = document.getElementById('scoresTable');
-            table.appendChild(createTableRow(newRow));
+            const tr = await createTableRow(newRow, folder);
+            table.appendChild(tr);
             updateTotal(); // Update the "Total" column
         }
-        function addColumn() {
+        async function addColumn() {
+            const folder = document.getElementById('folderList').value;
+            if (await isFolderLocked(folder)) {
+                return;
+            }
             const table = document.getElementById('scoresTable');
             const newHeader = `Game ${table.rows[0].cells.length - 2}`; // Subtract 2 instead of 1 to account for the "Total" column
         
@@ -199,7 +208,7 @@
     </script>
 </head>
 <body>
-    <h1>API Test</h1>
+    <h1>Bjorli Games</h1>
     <table id="scoresTable"> 
         <!-- The table will be generated dynamically using JavaScript -->
     </table>
