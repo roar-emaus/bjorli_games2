@@ -11,14 +11,14 @@ def write_csv(data_dict, folder_path):
     # Create the folder if it doesn't exist
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    headers = ['contestant'] + list(data_dict[list(data_dict.keys())[0]].keys())
+    headers = ['Deltager'] + list(data_dict[list(data_dict.keys())[0]].keys())
 
     with open(file_path, 'w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
         csv_writer.writerow(headers)
 
-        for contestant, scores in data_dict.items():
-            row = [contestant] + list(scores.values())
+        for Deltager, scores in data_dict.items():
+            row = [Deltager] + list(scores.values())
             csv_writer.writerow(row)
 
 

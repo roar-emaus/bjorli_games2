@@ -45,13 +45,13 @@
 
             for (let i = 1; i < table.rows.length; i++) {
                 const row = table.rows[i];
-                const contestant = row.cells[0].innerText;
+                const Deltager = row.cells[0].innerText;
                 const scores = {};
                 for (let j = 1; j < totalColumnIndex; j++) {
                     const game = table.rows[0].cells[j].innerText;
                     scores[game] = parseInt(row.cells[j].innerText);
                 }
-                data[contestant] = scores;
+                data[Deltager] = scores;
             }
             return data;
         }
@@ -69,25 +69,33 @@
                 console.log(data.message);
             } else {
                 updateTable(data, folder);
+
             }
             updateTotal();
+            const submitButton = document.getElementById('submitScoresButton');
+            submitButton.disabled = await isFolderLocked(folder);
+            const addRowButton = document.getElementById('addRowButton');
+            addRowButton.disabled = await isFolderLocked(folder);
+            const addColumnButton = document.getElementById('addColumnButton');
+            addColumnButton.disabled = await isFolderLocked(folder);
         }
 
         async function updateTable(data, folder) {
-            const table = document.getElementById('scoresTable');
-            table.innerHTML = '';
-            const header = await createTableHeader(data[0], folder);
-            const tbody = document.createElement('tbody');
-            tbody.appendChild(header);
-            for (const row of data) {
-              tbody.appendChild(await createTableRow(row, folder));
-            }
-            if (table.tBodies.length > 0) {
-              table.replaceChild(tbody, table.tBodies[0]);
-            } else {
-              table.appendChild(tbody);
-            }
-            updateTotal();
+           const table = document.getElementById('scoresTable');
+           table.innerHTML = '';
+           const header = await createTableHeader(data[0], folder);
+           const tbody = document.createElement('tbody');
+           tbody.appendChild(header);
+           for (const row of data) {
+             tbody.appendChild(await createTableRow(row, folder));
+           }
+           if (table.tBodies.length > 0) {
+             table.replaceChild(tbody, table.tBodies[0]);
+           } else {
+             table.appendChild(tbody);
+           }
+           updateTotal();
+
         }
 
         async function createTableHeader(rowData, folder) {
@@ -221,9 +229,9 @@
         document.getElementById('folderList').addEventListener('change', fetchScores);
     </script>
     <br>
-    <button onclick="submitScores()">Submit Scores</button>
-    <button onclick="addRow()">Add Row</button>
-    <button onclick="addColumn()">Add Column</button>
+    <button id="submitScoresButton"  onclick="submitScores()">Submit Scores</button>
+    <button id="addRowButton" onclick="addRow()">Add Row</button>
+    <button id="addColumnButton" onclick="addColumn()">Add Column</button>
 
 </body>
 </html>
