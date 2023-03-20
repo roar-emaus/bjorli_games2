@@ -185,6 +185,29 @@
                 }
                 table.rows[i].cells[totalColumnIndex].innerText = product;
             }
+            sortTable();
+        }
+        function sortTable() {
+            const table = document.getElementById('scoresTable');
+            if (!table.rows[0]) {
+                return;
+            }
+            const totalColumnIndex = table.rows[0].cells.length - 1;
+
+            // Convert table rows to an array, excluding the header row
+            const tableRowsArray = Array.from(table.rows).slice(1);
+
+            // Sort the array based on the "Total" column, in descending order
+            tableRowsArray.sort((rowA, rowB) => {
+                const totalA = parseInt(rowA.cells[totalColumnIndex].innerText);
+                const totalB = parseInt(rowB.cells[totalColumnIndex].innerText);
+                return totalA - totalB;
+            });
+
+            // Reinsert the sorted rows back into the table
+            for (const row of tableRowsArray) {
+                table.appendChild(row);
+            }
         }
         async function fetchLatestScores() {
             const selectElement = document.getElementById('folderList');
